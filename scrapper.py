@@ -54,7 +54,7 @@ for i in range(npages):
         print(f"Error on page {i+1}: {e}")
 
 # Create DataFrame with just review bodies
-df = pd.DataFrame(reviewlist, columns=['Review Body'])
+df = pd.DataFrame(reviewlist, columns=['review'])
 
 # Save to CSV
 df.to_csv("reviews.csv", index=False)
