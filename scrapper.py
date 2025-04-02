@@ -3,54 +3,59 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import random 
 
-reviewlist=[]
+reviewlist = []
+
 def getRandomProxy():
-    #using proxy
+    #using proxy - add your proxy details if needed
     proxy = {
-        "http": 
-        "https":
+        "http": None,  # Replace None with your proxy if available
+        "https": None  # Replace None with your proxy if available
     }
     return proxy 
-    #resp = requests.get("")
-    #print(resp.text)
 
-def extractReviews(reviewUrl, pg):
-    resp= requests.get(reviewUrl, proxies=getRandomProxy())    
-    soup = BeautifulSoup(resp.text, 'html.parser')
-    reviews = soup.findAll('div',{'data-hook': 'review'})
-    for item in reviews:
-        review ={
-            'productTitle': soup.title.text.replace("Amazon.in:Customer Reviews: ", ""),
-            'Review Title' : item.find('a', {'data-hook':'review-title'}).text.strip(),
-            'Rating' : item.find('i', {'data-hook':'review-star-rating'}).text.strip(), 
-            'Review Body' : item.find('span', {'data-hook':'review-body'}).text.strip(),
+def extractReviews(reviewUrl):
+    try:
+        resp = requests.get(reviewUrl, proxies=getRandomProxy())    
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        reviews = soup.findAll('div', {'data-hook': 'review'})
+        for item in reviews:
+            review_body = item.find('span', {'data-hook': 'review-body'}).text.strip()
+            reviewlist.append(review_body)
+    except Exception as e:
+        print(f"Error extracting reviews: {e}")
 
-
-        }
-        reviewlist.append(review)
 def totalpages(reviewurl):
-    resp=requests.get(reviewurl, proxies=getRandomProxy())
-    soup= BeautifulSoup(resp.text, 'html.parser')
-    review =soup.find('div', {'data-hook' : "cr-filter-info-review-rating-count"})
-    return 1+ int(reviews.text.strip().split(",")[1].split(" ")[0]).replace(",","" )//10
+    try:
+        resp = requests.get(reviewurl, proxies=getRandomProxy())
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        reviews = soup.find('div', {'data-hook': "cr-filter-info-review-rating-count"})
+        if reviews:
+            review_text = reviews.text.strip()
+            total_reviews = int(review_text.split(",")[1].split(" ")[0].replace(",", ""))
+            return 1 + total_reviews // 10
+        return 1
+    except Exception as e:
+        print(f"Error getting total pages: {e}")
+        return 1
 
-reviewlist = []    
-getRandomProxy()
+# Set your product URL here
+productUrl = "YOUR_AMAZON_PRODUCT_URL_HERE"
+reviewUrl = productUrl.replace("dp", "product-reviews") + "?pagenumber=1"
 
-pg = 1
-productUrl = 
-reviewUrl = productUrl.replace("dp","product-reviews") +  f"?pagenumber={pg}"
-npages= totalpages(reviewurl)
+npages = totalpages(reviewUrl)
 print(f"Running for {npages} pages")
 
 for i in range(npages):
     try:
         print(f"Running for page {i+1}")
-        reviewUrl = reviewUrl = productUrl.replace("dp","product-reviews") +  f"?pagenumber={i+1}"
-        extractReviews(reviewUrl.pg)
+        reviewUrl = productUrl.replace("dp", "product-reviews") + f"?pagenumber={i+1}"
+        extractReviews(reviewUrl)
     except Exception as e:
-        print(e)
-    
+        print(f"Error on page {i+1}: {e}")
 
-df=pd.DataFrame(reviewlist)
-df.to_excel("output.xlsx", index=False)
+# Create DataFrame with just review bodies
+df = pd.DataFrame(reviewlist, columns=['Review Body'])
+
+# Save to CSV
+df.to_csv("reviews.csv", index=False)
+print("Reviews saved to reviews.csv")
